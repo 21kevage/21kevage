@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regie · Erst Kontext. Dann KI. · 08.07.2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--navy:#03172B;--navy-2:#0A1F38;--navy-3:#132A45;
+--blueberry:#4082FF;--blueberry-soft:#6A9DFF;
+--ice:#F9F2F6;--ink-2:#D7E2EC;--ink-3:#9FB0C1;--ink-4:#6B7D91;
+--match:#FFAA40;--orange:#FF5C40;
+--line:rgba(255,255,255,.08);--glass:rgba(255,255,255,.03);--glass-2:rgba(255,255,255,.06);
+}
+html,body{height:100%}
+body{
+font-family:'Poppins',system-ui,sans-serif;
+background:var(--navy);color:var(--ice);
+overflow:hidden;
+}
+.wrap{display:grid;grid-template-columns:minmax(420px,44%) 1fr;height:100vh}
+
+/* ---------- Agenda links ---------- */
+.agenda{
+border-right:1px solid var(--line);
+display:flex;flex-direction:column;
+padding:2.2vh 1.6vw;
+min-width:0;
+}
+.agenda-head{margin-bottom:1.6vh;flex-shrink:0}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--blueberry-soft)}
+.title{font-size:clamp(18px,1.7vw,26px);font-weight:700;letter-spacing:-.5px;margin-top:4px}
+.meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-4);margin-top:4px}
+.phases{flex:1;display:flex;flex-direction:column;gap:.9vh;min-height:0;overflow-y:auto}
+.phase{
+display:grid;grid-template-columns:140px 1fr auto;gap:14px;align-items:center;
+padding:1.2vh 16px;border-radius:12px;
+background:var(--glass);border:1px solid var(--line);
+cursor:pointer;transition:background .2s,border-color .2s,opacity .2s;
+user-select:none;
+}
+.phase:hover{background:var(--glass-2)}
+.phase .time{font-family:'JetBrains Mono',monospace;font-size:clamp(13px,1vw,16px);color:var(--ink-3);font-weight:500;white-space:nowrap}
+.phase .name{font-size:clamp(14px,1.15vw,19px);font-weight:600;line-height:1.3}
+.phase .speaker{font-size:clamp(11px,.85vw,13px);color:var(--ink-3);font-weight:400;margin-top:2px}
+.phase .dur{font-family:'JetBrains Mono',monospace;font-size:clamp(11px,.85vw,13px);color:var(--ink-4);white-space:nowrap}
+.phase.past{opacity:.38}
+.phase.active{
+background:rgba(64,130,255,.14);border-color:var(--blueberry);
+box-shadow:0 0 0 1px var(--blueberry),0 6px 24px rgba(64,130,255,.18);
+}
+.phase.active .time,.phase.active .dur{color:var(--blueberry-soft)}
+.phase.pinned{border-color:var(--match);box-shadow:0 0 0 1px var(--match)}
+.agenda-foot{flex-shrink:0;margin-top:1.4vh;display:flex;align-items:center;justify-content:space-between}
+.hint{font-size:11px;color:var(--ink-4)}
+.autobtn{
+font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);
+background:none;border:1px solid var(--line);border-radius:8px;
+padding:5px 12px;cursor:pointer;display:none;
+}
+.autobtn:hover{background:var(--glass-2);color:var(--ice)}
+.autobtn.show{display:inline-block}
+
+/* ---------- Uhr rechts ---------- */
+.clockside{
+display:flex;flex-direction:column;justify-content:center;align-items:center;
+padding:2vh 2vw;position:relative;min-width:0;
+}
+.bigclock{
+font-family:'JetBrains Mono',monospace;
+font-size:clamp(70px,11vw,190px);
+font-weight:600;letter-spacing:-.02em;line-height:1;
+font-variant-numeric:tabular-nums;
+}
+.bigclock .sec{font-size:.42em;color:var(--ink-3);font-weight:500}
+.nowphase{margin-top:3.5vh;text-align:center;max-width:90%}
+.nowlabel{font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--ink-4)}
+.nowname{font-size:clamp(24px,2.6vw,44px);font-weight:700;letter-spacing:-.5px;margin-top:8px;line-height:1.15}
+.nowspeaker{font-size:clamp(14px,1.2vw,20px);color:var(--blueberry-soft);font-weight:500;margin-top:6px}
+.counters{display:flex;gap:3.5vw;margin-top:4vh}
+.counter{text-align:center}
+.counter .val{font-family:'JetBrains Mono',monospace;font-size:clamp(28px,3.4vw,56px);font-weight:600;font-variant-numeric:tabular-nums}
+.counter .lbl{font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-4);margin-top:4px}
+.val.warn{color:var(--match)}
+.val.over{color:var(--orange)}
+
+.totalbar{position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--navy-2)}
+.totalfill{height:100%;width:0;background:var(--blueberry);transition:width .5s linear}
+.nextline{margin-top:3vh;font-size:clamp(13px,1.1vw,17px);color:var(--ink-3)}
+.nextline b{color:var(--ink-2);font-weight:600}
+
+@media(max-width:1000px){
+.wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr;overflow-y:auto}
+body{overflow:auto}
+.agenda{border-right:none;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="agenda">
+<div class="agenda-head">
+<div class="eyebrow">MIDRANGE Expert Hour · Regie</div>
+<div class="title">Erst Kontext. Dann KI.</div>
+<div class="meta">08.07.2026 · 10:00 bis 11:00 · Landshut</div>
+</div>
+<div class="phases" id="phases"></div>
+<div class="agenda-foot">
+<div class="hint">Klick auf eine Phase pinnt sie manuell (falls ihr vom Plan abweicht)</div>
+<button class="autobtn" id="autobtn" onclick="unpin()">Zurück zu Auto</button>
+</div>
+</div>
+
+<div class="clockside">
+<div class="bigclock" id="clock">--:--<span class="sec">:--</span></div>
+<div class="nowphase">
+<div class="nowlabel" id="nowlabel">Aktuelle Phase</div>
+<div class="nowname" id="nowname">...</div>
+<div class="nowspeaker" id="nowspeaker"></div>
+</div>
+<div class="counters">
+<div class="counter"><div class="val" id="phaseleft">--:--</div><div class="lbl">Rest Phase</div></div>
+<div class="counter"><div class="val" id="totalleft">--:--</div><div class="lbl">Rest gesamt</div></div>
+</div>
+<div class="nextline" id="nextline"></div>
+<div class="totalbar"><div class="totalfill" id="totalfill"></div></div>
+</div>
+
+</div>
+
+<script>
+/* ================= KONFIG =================
+Startzeiten in Minuten ab 10:00 Uhr. Hier anpassen, wenn ihr das Timing ändert. */
+const WEBINAR_DATE = '2026-07-08';      // festes Datum, Format JJJJ-MM-TT
+const START_HOUR = 10, START_MIN = 0;   // Webinar-Start 10:00
+const TOTAL_MIN  = 60;                  // Gesamtdauer
+
+const PHASES = [
+  {start: 0,  name: "Begrüßung und Rahmen",              speaker: "Matthias"},
+  {start: 5,  name: "Ausgangslage: Bestandssysteme unter Druck", speaker: "Franz"},
+  {start: 13, name: "These: Erst Kontext. Dann KI.",     speaker: "Franz"},
+  {start: 18, name: "Live-Demo: sechs Schritte, sechs Leitplanken", speaker: "Josef"},
+  {start: 38, name: "Einordnung und Nutzen",             speaker: "Kevin"},
+  {start: 46, name: "Q&A",                               speaker: "Matthias"},
+  {start: 55, name: "CTA und Abschluss: PoC-Termin, Whitepaper", speaker: "Franz + Kevin"}
+];
+/* ========================================== */
+
+let pinned = null; // Index der manuell gepinnten Phase
+
+const [wy, wm, wd] = WEBINAR_DATE.split('-').map(Number);
+const startDate = new Date(wy, wm - 1, wd, START_HOUR, START_MIN, 0, 0);
+const endDate = new Date(startDate.getTime() + TOTAL_MIN*60000);
+
+function fmtHM(min){
+  const d = new Date(startDate.getTime() + min*60000);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function fmtMS(sec){
+  const neg = sec < 0; sec = Math.abs(Math.round(sec));
+  const m = Math.floor(sec/60), s = sec % 60;
+  return (neg ? '+' : '') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function build(){
+  const box = document.getElementById('phases');
+  PHASES.forEach((p, i) => {
+    const end = (i+1 < PHASES.length) ? PHASES[i+1].start : TOTAL_MIN;
+    p.end = end;
+    const el = document.createElement('div');
+    el.className = 'phase';
+    el.id = 'ph' + i;
+    el.onclick = () => pin(i);
+    el.innerHTML =
+      '<div class="time">' + fmtHM(p.start) + ' bis ' + fmtHM(end) + '</div>' +
+      '<div><div class="name">' + p.name + '</div><div class="speaker">' + p.speaker + '</div></div>' +
+      '<div class="dur">' + (end - p.start) + ' min</div>';
+    box.appendChild(el);
+  });
+}
+
+function pin(i){
+  pinned = (pinned === i) ? null : i;
+  document.getElementById('autobtn').classList.toggle('show', pinned !== null);
+  tick();
+}
+function unpin(){ pin(pinned); }
+
+function currentIndexByClock(now){
+  const elapsedMin = (now - startDate) / 60000;
+  if (elapsedMin < 0) return -1;                 // vor Start
+  if (elapsedMin >= TOTAL_MIN) return PHASES.length; // nach Ende
+  for (let i = PHASES.length - 1; i >= 0; i--){
+    if (elapsedMin >= PHASES[i].start) return i;
+  }
+  return 0;
+}
+
+function tick(){
+  const now = new Date();
+
+  // Uhr
+  document.getElementById('clock').innerHTML =
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') +
+    '<span class="sec">:' + String(now.getSeconds()).padStart(2,'0') + '</span>';
+
+  const autoIdx = currentIndexByClock(now);
+  const idx = (pinned !== null) ? pinned : autoIdx;
+
+  // Agenda-Markierung
+  PHASES.forEach((p, i) => {
+    const el = document.getElementById('ph' + i);
+    el.classList.toggle('active', i === idx);
+    el.classList.toggle('pinned', pinned === i);
+    el.classList.toggle('past', pinned === null && autoIdx > i);
+  });
+
+  const nowlabel = document.getElementById('nowlabel');
+  const nowname = document.getElementById('nowname');
+  const nowspeaker = document.getElementById('nowspeaker');
+  const phaseleft = document.getElementById('phaseleft');
+  const totalleft = document.getElementById('totalleft');
+  const nextline = document.getElementById('nextline');
+
+  // Gesamtzeit
+  const totalRemSec = (endDate - now) / 1000;
+  totalleft.textContent = fmtMS(Math.min(totalRemSec, TOTAL_MIN*60));
+  totalleft.className = 'val' + (totalRemSec < 0 ? ' over' : (totalRemSec < 300 ? ' warn' : ''));
+
+  // Fortschrittsbalken
+  const pct = Math.max(0, Math.min(100, ((now - startDate) / (TOTAL_MIN*60000)) * 100));
+  document.getElementById('totalfill').style.width = pct + '%';
+  document.getElementById('totalfill').style.background = (totalRemSec < 0) ? 'var(--orange)' : 'var(--blueberry)';
+
+  if (autoIdx === -1 && pinned === null){
+    // vor Start
+    const diffSec = (startDate - now) / 1000;
+    nowlabel.textContent = 'Start in';
+    if (diffSec >= 3600){
+      const h = Math.floor(diffSec/3600), m = Math.floor((diffSec%3600)/60);
+      nowname.textContent = h + ' Std ' + String(m).padStart(2,'0') + ' Min';
+    } else {
+      nowname.textContent = fmtMS(diffSec).replace('+','');
+    }
+    nowspeaker.textContent = 'Webinar startet am ' + String(wd).padStart(2,'0') + '.' + String(wm).padStart(2,'0') + '. um ' + fmtHM(0) + ' Uhr';
+    phaseleft.textContent = '--:--';
+    phaseleft.className = 'val';
+    nextline.innerHTML = 'Erste Phase: <b>' + PHASES[0].name + '</b> (' + PHASES[0].speaker + ')';
+    return;
+  }
+  if (autoIdx >= PHASES.length && pinned === null){
+    // nach Ende
+    nowlabel.textContent = 'Status';
+    nowname.textContent = 'Webinar beendet';
+    nowspeaker.textContent = 'Überzogen um ' + fmtMS((now - endDate)/1000);
+    phaseleft.textContent = fmtMS((now - endDate)/1000);
+    phaseleft.className = 'val over';
+    nextline.textContent = '';
+    return;
+  }
+
+  const p = PHASES[idx];
+  const phaseEnd = new Date(startDate.getTime() + p.end*60000);
+  const remSec = (phaseEnd - now) / 1000;
+
+  nowlabel.textContent = (pinned !== null) ? 'Gepinnte Phase' : 'Aktuelle Phase';
+  nowname.textContent = p.name;
+  nowspeaker.textContent = p.speaker;
+  phaseleft.textContent = fmtMS(remSec);
+  phaseleft.className = 'val' + (remSec < 0 ? ' over' : (remSec < 120 ? ' warn' : ''));
+
+  if (idx + 1 < PHASES.length){
+    const n = PHASES[idx+1];
+    nextline.innerHTML = 'Danach: <b>' + n.name + '</b> (' + n.speaker + ') ab ' + fmtHM(n.start);
+  } else {
+    nextline.innerHTML = 'Letzte Phase, danach Ende um ' + fmtHM(TOTAL_MIN);
+  }
+}
+
+build();
+tick();
+setInterval(tick, 250);
+</script>
+</body>
+</html>
