@@ -1,0 +1,19 @@
+{
+  "name": "PRISMA",
+  "short_name": "PRISMA",
+  "description": "Ein lebendiges, musikreaktives Sprachgesicht.",
+  "lang": "de",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080510",
+  "theme_color": "#080510",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/prisma-face.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
