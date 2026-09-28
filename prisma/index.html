@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#080510" />
+    <meta name="description" content="Ein lebendiges, musikreaktives Sprachgesicht." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/prisma-face.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/prisma-face.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>PRISMA</title>
+  </head>
+  <body data-state="idle">
+    <main class="app-shell">
+      <header class="status-bar" aria-live="polite">
+        <span class="status-mark" aria-hidden="true"></span>
+        <span id="statusText">Bereit</span>
+        <button id="infoButton" class="icon-button" type="button" aria-label="Infos anzeigen">i</button>
+      </header>
+
+      <section class="visual-stage" aria-label="PRISMA Visualisierung">
+        <canvas id="faceCanvas"></canvas>
+        <div class="visual-copy">
+          <p id="liveTranscript" class="live-transcript"></p>
+        </div>
+      </section>
+
+      <section class="control-panel">
+        <div class="wordmark">
+          <span>PRISMA</span>
+          <small>voice visualizer</small>
+        </div>
+        <p id="hintText" class="hint">Tippe auf den Kreis und sprich mit mir.</p>
+        <div class="controls">
+          <button id="talkButton" class="talk-button" type="button" aria-label="Gespräch starten">
+            <span class="talk-symbol" aria-hidden="true"></span>
+            <span id="talkButtonLabel">Gespräch starten</span>
+          </button>
+          <button id="muteButton" class="mute-button" type="button" aria-pressed="false" aria-label="Mikrofon stummschalten">
+            <span aria-hidden="true">⌁</span>
+          </button>
+        </div>
+        <p class="privacy-note">Dein Mikrofon wird nur während eines gestarteten Gesprächs verwendet.</p>
+      </section>
+    </main>
+
+    <dialog id="infoDialog">
+      <button id="closeInfoButton" class="dialog-close" type="button" aria-label="Schließen">×</button>
+      <h2>PRISMA</h2>
+      <p>Ein abstraktes Gesicht aus Licht, Farbe und Klang. Es hört zu, wenn du sprichst, und reagiert auf seine eigene Stimme.</p>
+      <p>Für echte Gespräche braucht die App eine sichere OpenAI-Verbindung auf dem Server. Ohne diese läuft sie als Mikrofon-Visualizer.</p>
+      <section id="nativeSettings" class="native-settings" hidden>
+        <label for="endpointInput">Server-Adresse</label>
+        <input id="endpointInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://…/api/realtime-call" />
+        <button id="saveEndpointButton" type="button">Adresse speichern</button>
+        <small id="endpointFeedback"></small>
+      </section>
+    </dialog>
+
+    <audio id="remoteAudio" autoplay></audio>
+    <noscript>Für PRISMA muss JavaScript aktiviert sein.</noscript>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
