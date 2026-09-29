@@ -82,6 +82,18 @@ export async function onRequestPost(context) {
   });
 
   const responseText = await response.text();
+  if (response.ok) {
+    // The Realtime calls endpoint returns the SDP answer as plain text. The
+    // PRISMA clients use a small JSON envelope, so keep the API key server-side
+    // while returning precisely the data needed for setRemoteDescription().
+    return json({
+      transport: {
+        type: "answer",
+        sdp: responseText
+      }
+    }, response.status, context.request);
+  }
+
   return new Response(responseText, {
     status: response.status,
     headers: responseHeaders(context.request, response.headers.get("content-type") || "application/json; charset=utf-8")
