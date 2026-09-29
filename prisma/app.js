@@ -318,6 +318,77 @@ function configureRemoteAudio(stream) {
   app.remoteMeter = new AudioMeter(app.audioContext, stream);
 }
 
+function waitForIceGathering(connection, timeoutMs = 8000) {
+  if (connection.iceGatheringState === "complete") {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      window.clearTimeout(timeout);
+      connection.removeEventListener("icegatheringstatechange", onStateChange);
+      resolve();
+    };
+    const onStateChange = () => {
+      if (connection.iceGatheringState === "complete") {
+        finish();
+      }
+    };
+    const timeout = window.setTimeout(finish, timeoutMs);
+    connection.addEventListener("icegatheringstatechange", onStateChange);
+  });
+}
+
+function waitForDataChannel(channel, timeoutMs = 12000) {
+  if (channel.readyState === "open") {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      channel.removeEventListener("open", onOpen);
+      channel.removeEventListener("close", onClose);
+      channel.removeEventListener("error", onError);
+    };
+    const finish = (callback) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      callback();
+    };
+    const onOpen = () => finish(resolve);
+    const onClose = () => finish(() => reject(new Error("realtime_channel_closed")));
+    const onError = () => finish(() => reject(new Error("realtime_channel_error")));
+    const timeout = window.setTimeout(() => {
+      finish(() => reject(new Error("realtime_channel_timeout")));
+    }, timeoutMs);
+
+    channel.addEventListener("open", onOpen);
+    channel.addEventListener("close", onClose);
+    channel.addEventListener("error", onError);
+  });
+}
+
+function readableConnectionError(message) {
+  const knownErrors = {
+    server_misconfigured: "Der OpenAI-Zugang auf dem Server fehlt.",
+    server_not_configured: "Die Server-Adresse fehlt.",
+    realtime_channel_timeout: "Die Sprachverbindung wurde nicht aufgebaut.",
+    realtime_channel_closed: "Die Sprachverbindung wurde geschlossen.",
+    realtime_channel_error: "Beim Sprachkanal ist ein Fehler aufgetreten."
+  };
+  return knownErrors[message] || `Verbindungsfehler: ${message.slice(0, 140)}`;
+}
+
 async function startConversation() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     setState("error", "Mikrofon nicht verfügbar", "Öffne PRISMA bitte in Chrome oder Samsung Internet.");
@@ -360,6 +431,11 @@ async function startConversation() {
 
     const offer = await connection.createOffer();
     await connection.setLocalDescription(offer);
+    await waitForIceGathering(connection);
+    const localDescription = connection.localDescription;
+    if (!localDescription || !localDescription.sdp) {
+      throw new Error("no_local_description");
+    }
     const realtimeEndpoint = getRealtimeEndpoint();
     if (!realtimeEndpoint) {
       throw new Error("server_not_configured");
@@ -368,13 +444,17 @@ async function startConversation() {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        sdp: offer.sdp,
+        sdp: localDescription.sdp,
         clientId: getClientId()
       })
     });
     const responseBody = await sessionResponse.json().catch(() => ({}));
     if (!sessionResponse.ok || !responseBody.transport || !responseBody.transport.sdp) {
-      const reason = responseBody.error || responseBody.message || "Die Sprachverbindung ist noch nicht eingerichtet.";
+      const reason =
+        (typeof responseBody.error === "string" && responseBody.error) ||
+        responseBody.error?.message ||
+        responseBody.message ||
+        `server_http_${sessionResponse.status}`;
       throw new Error(reason);
     }
 
@@ -382,6 +462,8 @@ async function startConversation() {
       type: responseBody.transport.type || "answer",
       sdp: responseBody.transport.sdp
     });
+    setState("connecting", "Verbinde mich", "PRISMA prüft den Sprachkanal …");
+    await waitForDataChannel(channel);
     app.demoOnly = false;
     setState("listening", "Ich höre dir zu", "Sprich einfach ganz normal.");
   } catch (error) {
@@ -392,10 +474,7 @@ async function startConversation() {
     }
     app.demoOnly = true;
     setState("demo", "Visualizer-Modus", "Die Stimme kommt dazu, sobald die sichere Server-Verbindung eingerichtet ist.");
-    elements.transcript.textContent =
-      message === "server_misconfigured" || message === "server_not_configured"
-        ? "OpenAI-Serverzugang fehlt noch."
-        : "";
+    elements.transcript.textContent = readableConnectionError(message);
   }
 }
 
