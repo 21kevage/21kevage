@@ -256,7 +256,7 @@ function setState(nextState, status, hint) {
   document.body.dataset.state = nextState;
   elements.status.textContent = status;
   elements.hint.textContent = hint;
-  const running = nextState === "listening" || nextState === "speaking" || nextState === "demo";
+  const running = nextState !== "idle" && nextState !== "error";
   elements.talkLabel.textContent = running ? "Gespräch beenden" : "Gespräch starten";
   elements.talkButton.setAttribute("aria-label", running ? "Gespräch beenden" : "Gespräch starten");
 }
