@@ -11,7 +11,8 @@ const NATIVE_APP_ORIGIN = "https://appassets.androidplatform.net";
 function responseHeaders(request, contentType = "application/json; charset=utf-8") {
   const headers = {
     "content-type": contentType,
-    "cache-control": "no-store"
+    "cache-control": "no-store",
+    "x-prisma-version": "0.1.2"
   };
   if (request && request.headers.get("origin") === NATIVE_APP_ORIGIN) {
     headers["access-control-allow-origin"] = NATIVE_APP_ORIGIN;
@@ -59,7 +60,12 @@ export async function onRequestPost(context) {
     audio: {
       input: {
         turn_detection: {
-          type: "server_vad"
+          type: "server_vad",
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 700,
+          create_response: true,
+          interrupt_response: true
         }
       },
       output: {
